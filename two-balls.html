@@ -1,0 +1,239 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+	<title>两个球相碰后反弹</title>
+	<style type="text/css">
+	html,body{
+		width:100%;
+		 
+		overflow: hidden;
+	}
+
+	</style>
+</head>
+<body>
+	<canvas id="canvas"></canvas>
+	<script>
+
+	window.onload=function(){
+
+		// 随机颜色
+		function randomColor(){
+			var r=Math.floor(Math.random()*255);
+			var g=Math.floor(Math.random()*255);
+			var b=Math.floor(Math.random()*255);
+			var a=Math.random();
+			return 'rgba('+r+','+g+','+b+','+a+')';
+		}
+
+
+		// 创建球对象 
+		function Ball(radius){
+			this.x=0;
+			this.y=0;
+
+			this.vx=0;
+			this.vy=0;
+
+			this.radius=radius;
+			this.color=randomColor();
+			this.lineWidth=1; 
+			this.scaleX=1;
+			this.scaleY=1; 
+			this.rotation=0; 
+
+			// 质量
+			this.mass=1;
+
+		}
+
+		Ball.prototype.draw=function(ctx){
+			ctx.save();
+			ctx.translate(this.x,this.y);
+			// ctx.scale(this.scaleX,scaleY);
+			ctx.rotate(this.rotation);
+
+			ctx.lineWidth=this.lineWidth;
+			ctx.strokeStyle=this.color;
+			ctx.fillStyle=this.color;
+
+			ctx.beginPath();
+			ctx.arc(0,0,this.radius,0,2*Math.PI,false);
+			ctx.closePath();
+			ctx.fill();
+			ctx.stroke(); 
+			ctx.restore();
+
+
+		}
+
+		Ball.prototype.getBounds=function(){
+
+			return{
+				x:this.x-this.radius,
+				y:this.y-this.radius,
+				width:this.radius*2,
+				height:this.radius*2
+			};
+
+		}
+
+		//捕获坐标
+		window.mousePos={};
+		window.mousePos.captureMouse=function(element){
+
+			var mouse={
+				x:0,
+				y:0
+			};
+			element.addEventListener("mousemove",function(event){
+				var x,y;
+				if(event.pageX||event.pageY){
+					x=event.pageX;
+					y=event.pageY;
+
+				}else{
+					x=event.clientX+document.body.scrollLeft+document.documentElement.scrollLeft;
+					y=event.clientY + document.body.scrollTop +document.documentElement.scrollTop;
+				}
+				x-=element.offsetLeft;
+				y-=element.offsetTop;
+				mouse.x=x;
+				mouse.y=y; 
+			},false);
+
+			return mouse; 
+
+		}
+
+
+		window.mousePos.includePoint=function(rect,x,y){
+			return !(x<rect.x||x>rect.x+rect.width||y<rect.y||y>rect.y+rect.height);
+
+		}
+
+
+		var canvas=document.getElementById("canvas");
+		var ctx=canvas.getContext("2d");
+		var mouse=mousePos.captureMouse(canvas);
+
+		function resets(){
+			
+			canvas.width=window.innerWidth;
+			canvas.height=window.innerHeight;
+			document.body.height=window.innerHeight;
+		}
+
+		window.addEventListener("resize",function(){
+			resets();
+		});
+		resets();
+
+ 
+
+		var w=window.innerWidth/2;
+		var h=window.innerHeight/2;
+
+		var ball1=new Ball(25);
+		var gravity=0.15;
+		var req;
+		ball1.mass=3;
+		ball1.x=Math.random()*w;
+		ball1.y=Math.random()*h;
+		ball1.vx=3;
+		ball1.vy=1;
+		
+
+
+
+		var ball2=new Ball(35);
+		ball2.mass=5;
+
+		ball2.x=Math.random()*w+100;
+		ball2.y=Math.random()*h;
+		ball2.vx=-5;
+		ball2.vy=1;
+		var endx1,endx2;
+
+		function check(obj){
+			var bounce=-0.7;
+			var left=0,right=canvas.width,top=0,bottom=canvas.height;
+			if(obj.x+obj.radius>=right){
+				obj.x=right-obj.radius;
+				obj.vx*=bounce;
+			}else if(obj.x-obj.radius<=left){
+				obj.x=left+obj.radius;
+				obj.vx*=bounce;
+
+			}
+			if(obj.y+obj.radius>=bottom){
+				obj.y=bottom-obj.radius;
+				obj.vy*=bounce;
+
+			}else if(obj.y-obj.radius<=top){
+				obj.y=top+obj.radius;
+				obj.vy*=bounce;
+
+			}
+		}
+
+		 
+
+		var i=0;
+		(function run(){
+			req=requestAnimationFrame(run);
+			ctx.clearRect(0,0,2*w,2*h);
+		    
+			var dx=ball2.x-ball1.x;
+			var dy=ball2.y-ball1.y;
+			 
+			var dis=Math.sqrt(dx*dx+dy*dy);
+
+			ball1.vy+=gravity;
+			ball2.vy+=gravity;
+
+			if(dis<=ball1.radius+ball2.radius){
+				console.log("故乡"+ ++i);
+
+				endx1=((ball1.mass-ball2.mass)*ball1.vx+2*ball2.mass*ball2.vx)/(ball1.mass+ball2.mass);
+
+				endx2=((ball2.mass-ball1.mass)*ball2.vx+2*ball1.mass*ball1.vx)/(ball1.mass+ball2.mass);
+				ball1.vx=endx1;
+				ball2.vx=endx2;
+ 
+				ball1.x+=ball1.vx;
+				ball2.x+=ball2.vx;
+
+				ball1.y+=ball1.vy;
+				ball2.y+=ball2.vy;
+
+				
+
+			}else{
+				check(ball1);
+				check(ball2);
+
+				ball1.x+=ball1.vx;
+				ball2.x+=ball2.vx;
+
+				ball1.y+=ball1.vy;
+				ball2.y+=ball2.vy;
+				 
+			}
+ 
+			ball1.draw(ctx);
+			ball2.draw(ctx);
+ 
+		}());
+
+  
+	}
+
+
+
+	</script>
+	
+</body>
+</html>
